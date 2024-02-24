@@ -1,3 +1,6 @@
+# Note
+I will be keeping up this tool doing some bugfix/enhancements, feel free to contribute or report bugs!
+
 # Akasha Scanner
 
 A Genshin Impact tool that extracts your account data, including achievements, characters, artifacts, and weapons.
@@ -166,7 +169,7 @@ and/or screenshots of your game
 ### Submitting Pull Requests
 All pull requests are greatly appreciated.
 You may want to take a look with
-[opened issues](https://github.com/xenesty/AkashaScanner/issues?q=is%3Aopen+is%3Aissue)
+[opened issues](https://github.com/akrios-d/AkashaScanner/issues?q=is%3Aopen+is%3Aissue)
 if you are looking for somewhere to start.
 
 I am also not very experienced with C# and .NET Core
