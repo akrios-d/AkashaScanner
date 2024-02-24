@@ -9,7 +9,7 @@ namespace AkashaScanner.Core
 {
     public class AppUpdate
     {
-        private const string LatestReleaseApiUrl = "https://api.github.com/repos/xenesty/AkashaScanner/releases/latest";
+        private const string LatestReleaseApiUrl = "https://api.github.com/repos/akrios-d/AkashaScanner/releases/latest";
         private const string AppExecutableName = "AkashaScanner.exe";
         private static readonly string AppExecutable = Path.Combine(Utils.ExecutableDirectory, AppExecutableName);
         private static readonly List<string> RemoveFiles = new()
