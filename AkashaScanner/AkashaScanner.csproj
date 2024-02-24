@@ -34,8 +34,7 @@
     <ItemGroup>
         <PackageReference Include="FuzzySharp" Version="2.0.2" />
         <PackageReference Include="InputSimulatorCore" Version="1.0.5" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="6.0.547" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="6.0.553" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
         <PackageReference Include="MimeTypes" Version="2.4.1">
           <PrivateAssets>all</PrivateAssets>
