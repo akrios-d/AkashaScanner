@@ -13,11 +13,11 @@
         <Configurations>Debug;Release;Headless</Configurations>
         <Platforms>x64</Platforms>
         <Title>Akasha Scanner</Title>
-        <Version>0.4.2</Version>
+        <Version>0.4.4</Version>
         <Copyright>MIT</Copyright>
-        <RepositoryUrl>https://github.com/xenesty/AkashaScanner</RepositoryUrl>
+        <RepositoryUrl>https://github.com/akrios-d/AkashaScanner</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageProjectUrl>https://github.com/xenesty/AkashaScanner</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/akrios-d/AkashaScanner</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <NeutralLanguage>en</NeutralLanguage>

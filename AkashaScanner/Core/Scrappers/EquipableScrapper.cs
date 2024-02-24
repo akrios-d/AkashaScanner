@@ -27,8 +27,7 @@ namespace AkashaScanner.Core.Scappers
         private void Run(TaskQueue tasks, C config)
         {
             int order = 0;
-            StartMonitoringProcess();
-            ScrapPlan.Activate();
+            StartMonitoringProcess();            
             var itemCount = GetItemCount();
             Logger.LogInformation("Number of items: {itemCount}", itemCount);
 

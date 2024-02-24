@@ -80,14 +80,14 @@ namespace AkashaScanner.Core.DataCollections.Repositories
 
                 var talentsComp = result.modules.Find((m) => m.name == "Talents")?.components.Find((c) => c.component_id == "talent");
                 if (string.IsNullOrEmpty(talentsComp?.data)) continue;
-                var talentsData = JsonConvert.DeserializeObject<TalentData>(talentsComp.data)!.list;
+                var talentsData = JsonConvert.DeserializeObject<TalentData>(talentsComp.data.ToLower())!.list;
 
                 var talents = talentsData.Select(data =>
                 {
                     var name = data.title.Trim();
                     if (data.attributes != null)
                     {
-                        var levelAttr = data.attributes.Find(a => a.key == "Level" || a.key == "");
+                        var levelAttr = data.attributes.Find(a => a.key.Equals("level") || a.key == "");
                         if (levelAttr != null && levelAttr.values.Count >= 10)
                         {
                             // Assume all normal attack starts with the word 'Normal Attack'
@@ -100,7 +100,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                                 };
                             }
                             // Assume all bursts have an energy cost
-                            if (data.attributes.Find(a => a.key.Trim() == "Energy Cost") != null)
+                            if (data.attributes.Find(a => a.key.Trim().Equals("energy cost")) != null)
                             {
                                 return new CharacterEntry.Talent()
                                 {
