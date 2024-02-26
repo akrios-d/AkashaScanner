@@ -91,7 +91,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                         if (levelAttr != null && levelAttr.values.Count >= 10)
                         {
                             // Assume all normal attack starts with the word 'Normal Attack'
-                            if (name.StartsWith("Normal Attack"))
+                            if (name.StartsWith("normal attack"))
                             {
                                 return new CharacterEntry.Talent()
                                 {

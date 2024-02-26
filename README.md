@@ -39,7 +39,7 @@ and [Aspirine's Genshin Impact Calculator](https://genshin.aspirine.su).
 
 ## Getting Started
 
-Download the latest version of the Akasha Scanner [here](https://github.com/xenesty/AkashaScanner/releases/latest) and unzip its files.
+Download the latest version of the Akasha Scanner [here](https://github.com/akrios-d/AkashaScanner/releases/latest) and unzip its files.
 
 You need Genshin Impact installed on your computer.
 You will also need to install
@@ -123,7 +123,7 @@ Then, go to [Paimon.moe](https://paimon.moe/settings) or [Seelie.me](https://see
 Select "Export & Import Data" and import the file you just exported.
 
 ### I have other questions
-You may want to check [this](https://github.com/xenesty/AkashaScanner/discussions) out and search for answers.
+You may want to check [this](https://github.com/akrios-d/AkashaScanner/discussions) out and search for answers.
 If you don't find any, please feel free to start a new discussion. :)
 
 
