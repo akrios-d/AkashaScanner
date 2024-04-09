@@ -83,6 +83,8 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                 return entry with { Slot = ArtifactSlot.Goblet };
             else if (entry.Name == "Skeletal Hat")
                 return entry with { Slot = ArtifactSlot.Circlet };
+            else if (entry.Name == "Poem Passed Down from Days Past")
+                return entry with { Slot = ArtifactSlot.Circlet, Name = "Poetry Of Days Past" };
 
             return entry;
         }
