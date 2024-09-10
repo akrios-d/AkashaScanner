@@ -1,6 +1,5 @@
 ﻿using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
-using AkashaScanner.Core.Scappers;
 using AkashaScanner.Core.TextRecognition;
 
 namespace AkashaScanner.Core.Scrappers
