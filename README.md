@@ -1,5 +1,12 @@
-# Note
+# Mantainer Note - Release for genshin 5.0(10/Sep/24)
+
 I will be keeping up this tool doing some bugfix/enhancements, feel free to contribute or report bugs!
+
+This tool use hoyowiki to keep up to date, currently, The endpoints for new characters return some data that are used to parse the characters as empty,
+therefore, not being able to retrieve this data and scan for it. I'll be looking for a new solution to this and do a new release as soon is possible.
+
+e.g. with Mualani: https://sg-wiki-api-static.hoyolab.com/hoyowiki/wapi/entry_page?entry_page_id=6319
+objects inside filter_values is empty and for that reason, not able to parse this date.
 
 # Akasha Scanner
 
