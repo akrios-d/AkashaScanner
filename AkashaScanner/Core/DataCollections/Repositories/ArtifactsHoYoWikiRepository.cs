@@ -42,7 +42,10 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                 var loadSingle = async (DataContent data, ArtifactSlot slot) =>
                 {
                     var name = data.title;
-                    if (string.IsNullOrEmpty(name)) return;
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        return;
+                    }
                     name = name.Trim();
                     var icon = data.icon_url;
                     var iconPath = IconRepository.GetPath("Artifacts", name, Path.GetExtension(icon));
@@ -54,8 +57,11 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                         Slot = slot,
                         SetName = setName,
                     };
-                    entry = ApplyHuskofOpulentDreamsPatch(entry);
-                    output.Add(entry);
+                    entry = FixWikiErrors(entry);
+                    if(entry.Slot != ArtifactSlot.Invalid)
+                    {
+                        output.Add(entry);
+                    }                    
                 };
 
                 await loadSingle(data.flower_of_life, ArtifactSlot.Flower);
@@ -70,21 +76,23 @@ namespace AkashaScanner.Core.DataCollections.Repositories
             return output;
         }
 
-        private static ArtifactEntry ApplyHuskofOpulentDreamsPatch(ArtifactEntry entry)
+        // Data is wrong in the wiki, so we fix it here
+        private static ArtifactEntry FixWikiErrors(ArtifactEntry entry)
         {
-            // LMAO Husk of Opulent Dreams data are incorrect on wiki
-            if (entry.Name == "Bloom Times")
+            if (string.Equals(entry.Name, "Bloom Times", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Flower };
-            else if (entry.Name == "Plume of Luxury")
+            else if (string.Equals(entry.Name, "Plume of Luxury", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Plume };
-            else if (entry.Name == "Song of Life")
+            else if (string.Equals(entry.Name, "Song of Life", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Sands };
-            else if (entry.Name == "Calabash of Awakening")
+            else if (string.Equals(entry.Name, "Calabash of Awakening", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Goblet };
-            else if (entry.Name == "Skeletal Hat")
+            else if (string.Equals(entry.Name, "Skeletal Hat", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Circlet };
-            else if (entry.Name == "Poem Passed Down from Days Past")
+            else if (string.Equals(entry.Name, "Poem Passed Down from Days Past", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Circlet, Name = "Poetry Of Days Past" };
+            else if (string.Equals(entry.Name, "Myths of the Night Realm", StringComparison.OrdinalIgnoreCase) && entry.Slot == ArtifactSlot.Flower)
+                return entry with { Slot = ArtifactSlot.Flower, Name = "Reckoning of the Xenogenic" };            
 
             return entry;
         }

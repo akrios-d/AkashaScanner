@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.DataCollections;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;
@@ -124,17 +125,23 @@ namespace AkashaScanner.Core.Artifacts
         private void LoadEntry(Bitmap image, Artifact artifact)
         {
             var entry = GetItemEntry(Ocr, image);
-            if (entry != null)
+            if (entry is not null)
             {
                 var slot = entry.Slot;
                 artifact.Slot = slot;
                 artifact.SetName = entry.SetName;
                 if (artifact.Slot == ArtifactSlot.Flower)
+                {
                     artifact.MainStat = ArtifactStatType.HpFlat;
+                }                    
                 else if (artifact.Slot == ArtifactSlot.Plume)
+                {
                     artifact.MainStat = ArtifactStatType.AtkFlat;
+                }                    
                 else if (artifact.Slot != ArtifactSlot.Invalid)
+                {
                     LoadMainStat(image, artifact);
+                }                    
             }
         }
 

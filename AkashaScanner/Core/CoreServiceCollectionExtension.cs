@@ -1,5 +1,6 @@
 ﻿using AkashaScanner.Core.Achievements;
 using AkashaScanner.Core.Artifacts;
+using AkashaScanner.Core.BaseTypes.Data;
 using AkashaScanner.Core.Characters;
 using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.DataCollections.Repositories;
