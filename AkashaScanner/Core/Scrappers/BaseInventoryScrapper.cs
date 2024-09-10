@@ -1,10 +1,8 @@
 ﻿using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.TextRecognition;
-using Microsoft.Extensions.Logging;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace AkashaScanner.Core.Scappers
+namespace AkashaScanner.Core.Scrappers
 {
     public abstract class BaseInventoryScrapper<R, E, C> : BaseScrapper<R, C> where E : class, IEntry where C : IBaseScrapConfig
     {

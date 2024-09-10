@@ -3,7 +3,7 @@ using AkashaScanner.Core.ScrapPlans;
 using AkashaScanner.Core.TextRecognition;
 using Microsoft.Extensions.Logging;
 
-namespace AkashaScanner.Core.Scappers
+namespace AkashaScanner.Core.Scrappers
 {
     public abstract class EquipableScrapper<R, E, C> : BaseInventoryScrapper<R, E, C> where E : class, IEntry where C : IBaseScrapConfig, ITravelerNameConfig, ICharacterNamesConfig
     {

@@ -2,7 +2,7 @@
 using AkashaScanner.Core.Navigation.Achievement;
 using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;
-using AkashaScanner.Core.Scappers;
+using AkashaScanner.Core.Scrappers;
 using AkashaScanner.Core.ScrapPlans;
 using AkashaScanner.Core.Screenshot;
 using AkashaScanner.Core.Suspender;

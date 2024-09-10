@@ -1,12 +1,13 @@
 ﻿using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;
+using AkashaScanner.Core.Scrappers;
 using AkashaScanner.Core.ScrapPlans;
 using AkashaScanner.Core.Screenshot;
 using AkashaScanner.Core.Suspender;
 using AkashaScanner.Core.TextRecognition;
 using Microsoft.Extensions.Logging;
 
-namespace AkashaScanner.Core.Scappers
+namespace AkashaScanner.Core.Scrappers
 {
     public abstract class BaseScrapper<R, C> : IScrapper<C> where C : IBaseScrapConfig
     {
