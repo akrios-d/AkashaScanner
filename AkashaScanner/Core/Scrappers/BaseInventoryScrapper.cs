@@ -1,5 +1,6 @@
 ﻿using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
+using AkashaScanner.Core.Scappers;
 using AkashaScanner.Core.TextRecognition;
 
 namespace AkashaScanner.Core.Scrappers
@@ -18,7 +19,7 @@ namespace AkashaScanner.Core.Scrappers
             Navigation.Init();
             NameScreenRect = Win.GetRectangle(-408, 80, -81, 118);
             ItemInfoRect = Win.GetRectangle(-408, 80, -81, -80);
-            NameRect = Win.ScaleRectangle(15, 1, 267, 35);
+            NameRect = Win.ScaleRectangle(15, 1, 287, 35);
         }
 
         protected Bitmap GetNameImg()

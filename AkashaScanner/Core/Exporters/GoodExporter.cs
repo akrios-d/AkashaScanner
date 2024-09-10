@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.DataFiles;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.DataFiles;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -96,7 +97,7 @@ namespace AkashaScanner.Core.Exporters
                 JArray arr = new();
                 foreach (var artifact in data)
                 {
-                    if (!artifact.IsValid()) continue;
+                    if (!Artifact.IsValid()) continue;
                     JArray substats = new();
                     foreach (var substat in artifact.Substats)
                     {

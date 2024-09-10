@@ -1,4 +1,5 @@
 ﻿using AkashaScanner.Core.DataCollections;
+using AkashaScanner.Core.Scrappers;
 using AkashaScanner.Core.ScrapPlans;
 using AkashaScanner.Core.TextRecognition;
 using Microsoft.Extensions.Logging;

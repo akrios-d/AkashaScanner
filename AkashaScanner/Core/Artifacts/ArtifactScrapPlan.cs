@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.Navigation.Inventory;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.ScrapPlans;
 
 namespace AkashaScanner.Core.Artifacts
@@ -14,11 +15,17 @@ namespace AkashaScanner.Core.Artifacts
         protected override BasicScrapPlan GetScrapPlan(IArtifactConfig config)
         {
             if (config.ArtifactMinLevel > 0)
+            {
                 return new ByLevelScrapPlan(Navigation) { MinRarity = config.ArtifactMinRarity, MinLevel = config.ArtifactMinLevel };
+            }                
             else if (config.ArtifactMinRarity > 1)
+            {
                 return new ByRarityScrapPlan(Navigation) { MinRarity = config.ArtifactMinRarity };
+            }   
             else
+            {
                 return new BasicScrapPlan();
+            }                
         }
 
         protected class ByRarityScrapPlan : BasicScrapPlan

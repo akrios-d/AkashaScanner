@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.DataCollections;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;

@@ -1,4 +1,6 @@
-﻿namespace AkashaScanner.Core
+﻿using AkashaScanner.Core.BaseTypes.Data;
+
+namespace AkashaScanner.Core
 {
     public class WeaponOutput : List<Weapon> { }
     public class ArtifactOutput : List<Artifact> { }

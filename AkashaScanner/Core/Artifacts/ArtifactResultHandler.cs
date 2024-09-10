@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.DataFiles;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.DataFiles;
 using AkashaScanner.Core.ResultHandler;
 using Microsoft.Extensions.Logging;
 
