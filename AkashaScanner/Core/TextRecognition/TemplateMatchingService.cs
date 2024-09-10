@@ -12,7 +12,6 @@ namespace AkashaScanner.Core.TextRecognition
         private readonly FontFamily InGameFontFamily;
         private readonly Dictionary<string, Dictionary<float, Mat>> Mats = new();
         private readonly object Lock = new();
-
         private readonly ILogger Logger;
 
         public TemplateMatchingService(ILogger<TemplateMatchingService> logger)
@@ -62,7 +61,7 @@ namespace AkashaScanner.Core.TextRecognition
             }
         }
 
-        public Mat GetResult(Mat img, Mat textImg)
+        public static Mat GetResult(Mat img, Mat textImg)
         {
             var result = new Mat();
             Cv2.MatchTemplate(img, textImg, result, TemplateMatchModes.CCorrNormed);
@@ -83,7 +82,7 @@ namespace AkashaScanner.Core.TextRecognition
             return GetPoint(result);
         }
 
-        public int Match(Mat img, Mat textImg)
+        public static int Match(Mat img, Mat textImg)
         {
             using var result = GetResult(img, textImg);
             Cv2.MinMaxLoc(result, out double _, out double max);

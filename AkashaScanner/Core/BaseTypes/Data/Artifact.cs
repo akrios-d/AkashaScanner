@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace AkashaScanner.Core
+namespace AkashaScanner.Core.BaseTypes.Data
 {
     public sealed record Artifact
     {
@@ -13,7 +13,7 @@ namespace AkashaScanner.Core
         public string EquippedCharacter = "";
         public bool Locked;
 
-        public bool IsValid() => true;
+        public static bool IsValid() => true;
 
         private bool PrintMembers(StringBuilder builder)
         {
@@ -31,7 +31,10 @@ namespace AkashaScanner.Core
             bool first = true;
             foreach (var stat in Substats)
             {
-                if (first) first = false;
+                if (first)
+                {
+                    first = false;
+                }
                 else builder.Append(", ");
 
                 builder.Append("{ Type = ");

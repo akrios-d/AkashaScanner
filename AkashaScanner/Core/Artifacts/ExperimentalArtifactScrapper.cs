@@ -1,4 +1,5 @@
-﻿using AkashaScanner.Core.DataCollections;
+﻿using AkashaScanner.Core.BaseTypes.Data;
+using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;
@@ -91,7 +92,7 @@ namespace AkashaScanner.Core.Artifacts
             foreach (var (text, stat) in MainStatsMapping)
             {
                 var textImg = TemplateMatching.GetTextImg(text, fontSize);
-                var score = TemplateMatching.Match(ret, textImg);
+                var score = TemplateMatchingService.Match(ret, textImg);
                 if (score > maxScore)
                 {
                     maxScore = score;
@@ -121,7 +122,7 @@ namespace AkashaScanner.Core.Artifacts
             foreach (var (str, stats) in SubStatsTemplateMapping)
             {
                 var textImg = TemplateMatching.GetTextImg(str, fontSize);
-                var result = TemplateMatching.GetResult(ret, textImg);
+                var result = TemplateMatchingService.GetResult(ret, textImg);
                 foreach (var rowRect in SubstatBounds)
                 {
                     var resultRect = new Rect(rowRect.X, rowRect.Y, Math.Min(rowRect.Width, result.Width - rowRect.X), Math.Min(rowRect.Height, result.Height - rowRect.Y));
@@ -138,7 +139,7 @@ namespace AkashaScanner.Core.Artifacts
                     ArtifactStatType stat = stats[0];
                     if (stats.Count == 2)
                     {
-                        var percentScore = TemplateMatching.Match(rowMat, TemplateMatching.GetTextImg("%", fontSize));
+                        var percentScore = TemplateMatchingService.Match(rowMat, TemplateMatching.GetTextImg("%", fontSize));
                         if (percentScore < IsValidSubStatScore)
                         {
                             stat = stats[1];
@@ -180,7 +181,7 @@ namespace AkashaScanner.Core.Artifacts
                 var textImg = TemplateMatching.GetTextImg(entry.Text, fontSize);
                 var textWidth = textImg.Width;
                 if (textWidth > maxWidth || textWidth < minWidth) continue;
-                int score = TemplateMatching.Match(mat, textImg);
+                int score = TemplateMatchingService.Match(mat, textImg);
                 if (score > minScore)
                 {
                     if (entry.SimilarValues.Count > 0)

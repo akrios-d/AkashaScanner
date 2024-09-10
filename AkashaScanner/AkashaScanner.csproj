@@ -13,7 +13,7 @@
         <Configurations>Debug;Release;Headless</Configurations>
         <Platforms>x64</Platforms>
         <Title>Akasha Scanner</Title>
-        <Version>0.4.6</Version>
+        <Version>0.5.0</Version>
         <Copyright>MIT</Copyright>
         <RepositoryUrl>https://github.com/akrios-d/AkashaScanner</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -36,16 +36,16 @@
         <PackageReference Include="InputSimulatorCore" Version="1.0.5" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="6.0.553" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-        <PackageReference Include="MimeTypes" Version="2.4.1">
+        <PackageReference Include="MimeTypes" Version="2.5.2">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="OpenCvSharp4" Version="4.9.0.20240103" />
-        <PackageReference Include="OpenCvSharp4.Extensions" Version="4.9.0.20240103" />
-        <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.9.0.20240103" />
+        <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />
+        <PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20240616" />
+        <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20240616" />
         <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
-        <PackageReference Include="System.Drawing.Common" Version="8.0.2" />
+        <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
         <PackageReference Include="Tesseract" Version="5.2.0" />
     </ItemGroup>
 

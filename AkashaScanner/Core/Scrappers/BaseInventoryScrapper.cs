@@ -1,10 +1,8 @@
 ﻿using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.Navigation.Inventory;
 using AkashaScanner.Core.TextRecognition;
-using Microsoft.Extensions.Logging;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace AkashaScanner.Core.Scappers
+namespace AkashaScanner.Core.Scrappers
 {
     public abstract class BaseInventoryScrapper<R, E, C> : BaseScrapper<R, C> where E : class, IEntry where C : IBaseScrapConfig
     {
@@ -20,7 +18,7 @@ namespace AkashaScanner.Core.Scappers
             Navigation.Init();
             NameScreenRect = Win.GetRectangle(-408, 80, -81, 118);
             ItemInfoRect = Win.GetRectangle(-408, 80, -81, -80);
-            NameRect = Win.ScaleRectangle(15, 1, 267, 35);
+            NameRect = Win.ScaleRectangle(15, 1, 287, 35);
         }
 
         protected Bitmap GetNameImg()

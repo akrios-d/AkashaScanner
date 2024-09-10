@@ -1,5 +1,6 @@
 ﻿using AkashaScanner.Core.Achievements;
 using AkashaScanner.Core.Artifacts;
+using AkashaScanner.Core.BaseTypes.Data;
 using AkashaScanner.Core.Characters;
 using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.DataCollections.Repositories;
@@ -11,7 +12,7 @@ using AkashaScanner.Core.Navigation.Keyboard;
 using AkashaScanner.Core.Navigation.Mouse;
 using AkashaScanner.Core.ProcessControl;
 using AkashaScanner.Core.ResultHandler;
-using AkashaScanner.Core.Scappers;
+using AkashaScanner.Core.Scrappers;
 using AkashaScanner.Core.ScrapPlans;
 using AkashaScanner.Core.Screenshot;
 using AkashaScanner.Core.Suspender;
