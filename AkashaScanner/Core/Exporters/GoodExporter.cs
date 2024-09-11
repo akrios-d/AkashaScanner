@@ -24,7 +24,7 @@ namespace AkashaScanner.Core.Exporters
 
             string TravelerName = string.Empty;
 
-            if (characterFile != null)
+            if (characterFile is not null)
             {
                 if (!characterFile.Read(out var data))
                 {

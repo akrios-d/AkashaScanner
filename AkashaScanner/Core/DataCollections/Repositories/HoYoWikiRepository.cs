@@ -39,7 +39,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
             return output;
         }
 
-        private async Task<ListResponse<T>?> InternalLoadList<T>(HttpClient client, GetEntryListRequest reqBody)
+        private static async Task<ListResponse<T>?> InternalLoadList<T>(HttpClient client, GetEntryListRequest reqBody)
         {
             var requestBody = JsonConvert.SerializeObject(reqBody);
 
@@ -104,7 +104,6 @@ namespace AkashaScanner.Core.DataCollections.Repositories
         {
             public EntryData<T> data = default!;
         }
-
         private record EntryData<T>
         {
             public T page = default!;

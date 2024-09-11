@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using AkashaScanner.Core.Dtos.Character;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 
@@ -9,89 +10,147 @@ namespace AkashaScanner.Core.DataCollections.Repositories
         private static readonly Regex RemoveHtmlTags = new(@"<[^>]+>", RegexOptions.Compiled);
         private static readonly Regex FindTalentLevelUpConstellation = new(@"Increases\s+the\s+Level\s+of\s*(.*)\s*by\s+(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private const int TalentNameScore = 90;
+        private readonly HttpClient client;
+        private readonly Dictionary<string, CharacterEntry> missingEntries; 
 
         public CharactersHoYoWikiRepository(ILogger<CharactersHoYoWikiRepository> logger)
         {
             Logger = logger;
+            client = CreateClient();
+            missingEntries = new Dictionary<string, CharacterEntry>
+            {
+                {
+                    "Mualani",
+                    new CharacterEntry()
+                    {
+                        Element = Element.Hydro,
+                        WeaponType = WeaponType.Catalyst,
+                        Rarity = 5,
+                    }
+                },
+                {
+                    "Kinich",
+                    new CharacterEntry()
+                    {
+                        Element = Element.Dendro,
+                        WeaponType = WeaponType.Claymore,
+                        Rarity = 5,
+                    }
+                }
+            };
         }
 
-        public override async Task<List<CharacterEntry>?> Load()
+        private async Task<List<Item>?> GetCharactersList()
         {
-            using var client = CreateClient();
             Logger.LogInformation("Loading characters");
 
             var resp = await LoadEntryPageList<Item>(client, "2");
-            if (resp == null)
+            if (resp is null)
             {
                 Logger.LogError("Fail to load characters");
                 return null;
             }
+            return resp;
+        }
 
-            var output = new List<CharacterEntry>();
-
-            foreach (var item in resp)
+        private CharacterEntry FilteredData(string name, FilterValues filter)
+        {
+            missingEntries.TryGetValue(name, out var item);
+            if (item is not null)
             {
-                var name = item.name;
+                return item;
+            }
+            var rarityData = filter.character_rarity?.values?.FirstOrDefault();
+
+            // If can't parse we assume 4*
+            int rarity = int.TryParse(rarityData?.Replace("-Star", string.Empty), out rarity) ? rarity : 4;            
+
+            var elementData = filter.character_vision?.values?.FirstOrDefault();
+            
+            Element element = elementData switch
+            {
+                "Anemo" => Element.Anemo,
+                "Pyro" => Element.Pyro,
+                "Cryo" => Element.Cryo,
+                "Electro" => Element.Electro,
+                "Hydro" => Element.Hydro,
+                "Geo" => Element.Geo,
+                "Dendro" => Element.Dendro,
+                _ => Element.Invalid,
+            };
+          
+            var weaponData = filter.character_weapon?.values?.FirstOrDefault();
+            var weaponType = weaponData switch
+            {
+                "Bow" => WeaponType.Bow,
+                "Catalyst" => WeaponType.Catalyst,
+                "Polearm" => WeaponType.Polearm,
+                "Sword" => WeaponType.Sword,
+                "Claymore" => WeaponType.Claymore,
+                _ => WeaponType.Invalid,
+            };
+
+            var characterInfo = new CharacterEntry()
+            {
+                Rarity = rarity,
+                WeaponType = weaponType,
+                Element = element,
+            };
+
+            return characterInfo;
+        }
+
+        public override async Task<List<CharacterEntry>?> Load()
+        {
+            var output = new List<CharacterEntry>();
+            var charactersList = await GetCharactersList();
+
+            foreach (var character in charactersList ?? new List<Item>())
+            {
+                var name = character.name;
                 Logger.LogInformation("Loading '{name}'", name);
 
-                var result = await LoadEntryPage<Detail>(client, item.entry_page_id);
-                if (result == null)
+                var result = await LoadEntryPage<Detail>(client, character.entry_page_id);
+                if (result is null)
                 {
                     Logger.LogError("Fail to load '{name}'", name);
                     return null;
                 }
-
-                var rarityData = result.filter_values?.character_rarity?.values?.FirstOrDefault();
-                if (rarityData == null) continue;
-                if (!int.TryParse(rarityData.Replace("-Star", string.Empty), out int rarity)) continue;
-
-                var elementData = result.filter_values?.character_vision?.values?.FirstOrDefault();
-                if (elementData == null) continue;
-                Element element = elementData switch
-                {
-                    "Anemo" => Element.Anemo,
-                    "Pyro" => Element.Pyro,
-                    "Cryo" => Element.Cryo,
-                    "Electro" => Element.Electro,
-                    "Hydro" => Element.Hydro,
-                    "Geo" => Element.Geo,
-                    "Dendro" => Element.Dendro,
-                    _ => Element.Invalid,
-                };
-                if (element == Element.Invalid) continue;
-
-                var weaponData = result.filter_values?.character_weapon?.values?.FirstOrDefault();
-                if (weaponData == null) continue;
-                var weaponType = weaponData switch
-                {
-                    "Bow" => WeaponType.Bow,
-                    "Catalyst" => WeaponType.Catalyst,
-                    "Polearm" => WeaponType.Polearm,
-                    "Sword" => WeaponType.Sword,
-                    "Claymore" => WeaponType.Claymore,
-                    _ => WeaponType.Invalid,
-                };
-                if (weaponType == WeaponType.Invalid) continue;
+                var characterInfo = FilteredData(name, result.filter_values);
 
                 var consComp = result.modules.Find((m) => m.name == "Constellation")?.components.Find((c) => c.component_id == "summaryList");
-                if (string.IsNullOrEmpty(consComp?.data)) continue;
+                if (string.IsNullOrEmpty(consComp?.data))
+                {
+                    Logger.LogError("Fail to load '{name}'", name);
+                    continue;
+                }
+
                 var constellationsData = JsonConvert.DeserializeObject<ConstellationData>(consComp.data)!.list;
-                if (constellationsData.Count == 0) continue; // Skip Traveler without element
+                if (constellationsData.Count == 0)
+                {
+                    Logger.LogError("Fail to load '{name}'", name);
+                    continue; // Skip Traveler without element
+                }
 
                 var talentsComp = result.modules.Find((m) => m.name == "Talents")?.components.Find((c) => c.component_id == "talent");
-                if (string.IsNullOrEmpty(talentsComp?.data)) continue;
-                var talentsData = JsonConvert.DeserializeObject<TalentData>(talentsComp.data.ToLower())!.list;
+                if (string.IsNullOrEmpty(talentsComp?.data))
+                {
+                    Logger.LogError("Fail to load '{name}'", name);
+                    continue;
+                }
 
-                var talents = talentsData.Select(data =>
+                var talentsData = JsonConvert.DeserializeObject<TalentData>(talentsComp.data.ToLower())?.list;
+
+                var talents = talentsData?.Select(data =>
                 {
                     var name = data.title.Trim();
-                    if (data.attributes != null)
+                    if (data.attributes is not null)
                     {
                         var levelAttr = data.attributes.Find(a => a.key.Equals("level") || a.key == "");
-                        if (levelAttr != null && levelAttr.values.Count >= 10)
+                        if (levelAttr is not null && levelAttr.values.Count >= 10)
                         {
                             // Assume all normal attack starts with the word 'Normal Attack'
-                            if (name.StartsWith("normal attack"))
+                            if (name.StartsWith("normal attack", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 return new CharacterEntry.Talent()
                                 {
@@ -100,7 +159,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                                 };
                             }
                             // Assume all bursts have an energy cost
-                            if (data.attributes.Find(a => a.key.Trim().Equals("energy cost")) != null)
+                            if (data.attributes.Find(a => a.key.Trim().Equals("energy cost", StringComparison.InvariantCultureIgnoreCase)) != null)
                             {
                                 return new CharacterEntry.Talent()
                                 {
@@ -108,7 +167,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                                     Type = TalentType.Burst,
                                 };
                             }
-                            // Assume anything that can be leveled and is not a nomral attack/burst is a skill
+                            // Assume anything that can be leveled and is not a normal attack/burst is a skill
                             return new CharacterEntry.Talent()
                             {
                                 Name = name,
@@ -123,11 +182,11 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                     };
                 }).ToList();
 
-                var skillName = talents.Find(t => t.Type == TalentType.Skill)!.Name;
-                var burstName = talents.Find(t => t.Type == TalentType.Burst)!.Name;
+                var skillName = talents?.Find(t => t.Type == TalentType.Skill)?.Name;
+                var burstName = talents?.Find(t => t.Type == TalentType.Burst)?.Name;
 
-                var iconPath = IconRepository.GetPath("Characters", item.name, Path.GetExtension(item.icon_url));
-                await IconRepository.SaveUrlAsIcon(client, item.icon_url, iconPath);
+                var iconPath = IconRepository.GetPath("Characters", character.name, Path.GetExtension(character.icon_url));
+                await IconRepository.SaveUrlAsIcon(client, character.icon_url, iconPath);
 
                 var constellations = constellationsData.Select(data =>
                 {
@@ -164,11 +223,11 @@ namespace AkashaScanner.Core.DataCollections.Repositories
 
                 output.Add(new CharacterEntry()
                 {
-                    Name = item.name.Trim(),
-                    Rarity = rarity,
-                    Element = element,
-                    WeaponType = weaponType,
-                    IsTraveler = item.name.Contains("Traveler"),
+                    Name = character.name.Trim(),
+                    Rarity = characterInfo.Rarity,
+                    Element = characterInfo.Element,
+                    WeaponType = characterInfo.WeaponType,
+                    IsTraveler = character.name.Contains("Traveler"),
                     Icon = iconPath,
                     Talents = talents,
                     Constellations = constellations.ToList(),
@@ -177,70 +236,6 @@ namespace AkashaScanner.Core.DataCollections.Repositories
             Logger.LogInformation("Characters loaded");
 
             return output;
-        }
-        private record Item
-        {
-            public string entry_page_id = default!;
-            public string name = default!;
-            public string icon_url = default!;
-        }
-
-        private record Detail
-        {
-            public List<Module> modules = default!;
-            public FilterValues filter_values = default!;
-        }
-
-        public record FilterValues
-        {
-            public FilterValue character_vision = default!;
-            public FilterValue character_weapon = default!;
-            public FilterValue character_rarity = default!;
-        }
-
-        public record FilterValue
-        {
-            public List<string> values = default!;
-        }
-
-        private record Module
-        {
-            public string name = default!;
-            public List<Component> components = default!;
-        }
-
-        private record Component
-        {
-            public string component_id = default!;
-            public string data = default!;
-        }
-
-        private record ConstellationData
-        {
-            public List<ConstellationDataContent> list = default!;
-        }
-
-        public record ConstellationDataContent
-        {
-            public string name = default!;
-            public string desc = default!;
-        }
-
-        private record TalentData
-        {
-            public List<TalentDataContent> list = default!;
-        }
-
-        public record TalentDataContent
-        {
-            public string title = default!;
-            public List<TalentAttribute>? attributes = default!;
-        }
-
-        public record TalentAttribute
-        {
-            public string key = default!;
-            public List<string> values = default!;
         }
     }
 }
