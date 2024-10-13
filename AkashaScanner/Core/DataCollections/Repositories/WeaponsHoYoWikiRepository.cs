@@ -25,9 +25,14 @@ namespace AkashaScanner.Core.DataCollections.Repositories
 
             foreach (var item in resp)
             {
-                if (string.IsNullOrEmpty(item.icon_url)) continue;
+                if (string.IsNullOrEmpty(item.icon_url) || item.filter_values.weapon_rarity is null || item.filter_values.weapon_type is null)
+                {
+                    Logger.LogInformation("Failed for weapon: " + item.name);
+                    continue;
+                }
                 var iconPath = IconRepository.GetPath("Weapons", item.name, Path.GetExtension(item.icon_url));
                 await IconRepository.SaveUrlAsIcon(client, item.icon_url, iconPath);
+
                 var entry = new WeaponEntry()
                 {
                     Name = item.name.Trim(),
@@ -44,7 +49,9 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                     }
                 };
                 if (entry.Type != WeaponType.Invalid)
+                {
                     output.Add(entry);
+                }                    
             }
             Logger.LogInformation("Weapons loaded");
 
