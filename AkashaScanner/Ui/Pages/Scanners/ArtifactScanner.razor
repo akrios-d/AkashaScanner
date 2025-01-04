@@ -60,7 +60,7 @@
 
     public bool Enabled => ArtifactCollectionStatus.IsAvailable && CharacterCollectionStatus.IsAvailable;
 
-    private string WandererName { get; set; } = string.Empty;
+    private string WandererName { get => ScrapConfig.GetCharacterNameOverride("Wanderer"); set => ScrapConfig.SetCharacterNameOverride("Wanderer", value); }
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,10 +71,6 @@
 
     public bool HandleSubmit()
     {
-        if (string.IsNullOrEmpty(WandererName))
-            ScrapConfig.CharacterNameOverrides.Remove("Wanderer");
-        else
-            ScrapConfig.CharacterNameOverrides["Wanderer"] = WandererName;
         ScrapConfig.Save();
         return ArtifactScrapper.Start(Data);
     }

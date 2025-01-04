@@ -13,7 +13,7 @@
         <Configurations>Debug;Release;Headless</Configurations>
         <Platforms>x64</Platforms>
         <Title>Akasha Scanner</Title>
-        <Version>0.5.2</Version>
+        <Version>0.5.3</Version>
         <Copyright>MIT</Copyright>
         <RepositoryUrl>https://github.com/akrios-d/AkashaScanner</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -41,11 +41,12 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />
-        <PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20240616" />
-        <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20240616" />
+        <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+        <PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
+        <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
         <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
         <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+        <PackageReference Include="System.Text.Json" Version="9.0.0" />
         <PackageReference Include="Tesseract" Version="5.2.0" />
     </ItemGroup>
 
