@@ -159,7 +159,16 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                                 };
                             }
                             // Assume all bursts have an energy cost
-                            if (data.attributes.Find(a => a.key.Trim().Equals("energy cost", StringComparison.InvariantCultureIgnoreCase)) != null)
+                            if (data.attributes.Find(a => a.key.Trim().Equals("energy cost", StringComparison.InvariantCultureIgnoreCase)) is not null)
+                            {
+                                return new CharacterEntry.Talent()
+                                {
+                                    Name = name,
+                                    Type = TalentType.Burst,
+                                };
+                            }
+                            // Special case for Mavuika
+                            if (data.attributes.Find(a => a.key.Trim().Equals("fighting spirit limit", StringComparison.InvariantCultureIgnoreCase)) is not null)
                             {
                                 return new CharacterEntry.Talent()
                                 {
@@ -195,8 +204,8 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                     if (match.Success && int.TryParse(match.Groups[2].Value, out int levelUp))
                     {
                         var talentName = match.Groups[1].Value.Trim();
-                        var skillScore = talentName.FuzzySearch(skillName);
-                        var burstScore = talentName.FuzzySearch(burstName);
+                        var skillScore = skillName is not null ? talentName.FuzzySearch(skillName) : 0;
+                        var burstScore = burstName is not null ? talentName.FuzzySearch(burstName) : 0;
 
                         if (skillScore >= TalentNameScore && skillScore > burstScore)
                         {
