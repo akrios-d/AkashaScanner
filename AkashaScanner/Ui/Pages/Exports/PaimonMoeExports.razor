@@ -67,7 +67,7 @@
                 var value = await JS.InvokeAsync<string>("__akasha_getInputValue", fileInputId);
                 if (!string.IsNullOrEmpty(value))
                 {
-                    using var stream = import.OpenReadStream();
+                    using var stream = import.OpenReadStream(maxAllowedSize: 1024 * 1024 * 5);
                     using var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8);
                     importContent = await reader.ReadToEndAsync();
                 }
