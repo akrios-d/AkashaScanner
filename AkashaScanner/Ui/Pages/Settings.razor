@@ -42,7 +42,10 @@
 
     public async Task OnSubmit()
     {
-        if (Context != null && !Context.Validate()) return;
+        if (Context is not null && !Context.Validate())
+        {
+            return;
+        }
         ScrapConfig.Save();
     }
 
