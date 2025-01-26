@@ -9,7 +9,9 @@
 @inject IAchievementCollection AchievementCollections
 @inject IDataFileRepository<CharacterOutput> CharacterDataFiles
 @inject ICharacterCollection CharacterCollections
+@inject IPaimonMoeImporter PaimonImporter
 @inject IJSRuntime JS
+@inject ILogger<IPaimonMoeImporter> Logger
 
 <ExportLayout Enabled="@(SelectedAchievementFile is not null || !string.IsNullOrEmpty(ImportedContent))" OnSubmit="@ExportData">
     <div>
@@ -25,42 +27,63 @@
         <form class="import__file">
             <InputFile id="@FileInputId" class="file-input" accept=".json" OnChange="@OnFileChange" />
             <button class="button button--outline reset-button" type="reset" @onclick="@ClearFile">Clear</button>
+            <button class="button button--outline reset-button" type="submit" @onclick="@ImportFile">Import</button>
         </form>
     </div>
 
     <!-- Achievement and Character File Lists -->
     <DataFileList Title="Export Achievements"
-                  FileList="@AchievementFileList"
-                  @bind-Value="@SelectedAchievementFile" />
+    FileList="@AchievementFileList"
+    @bind-Value="@SelectedAchievementFile" />
 
     <DataFileListOptional Title="Export Characters"
-                          TitleNegative="Do not export characters"
-                          FileList="@CharacterFileList"
-                          @bind-Value="@SelectedCharacterFile" />
+    TitleNegative="Do not export characters"
+    FileList="@CharacterFileList"
+    @bind-Value="@SelectedCharacterFile" />
 </ExportLayout>
 
 @code {
     private const string FileInputId = "paimon-moe-exports-file-input";
-    private long MaxFileSize { get; set; } = 10 * 1024 * 1024; // Default: 10 MB
+    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
     // Selected files and file lists
     private IDataFile<AchievementOutput>? SelectedAchievementFile { get; set; }
     private List<IDataFile<AchievementOutput>> AchievementFileList { get; set; } = new();
     private IDataFile<CharacterOutput>? SelectedCharacterFile { get; set; }
     private List<IDataFile<CharacterOutput>> CharacterFileList { get; set; } = new();
-    private readonly ILogger Logger;
 
     // File import state
     private IBrowserFile? UploadedFile { get; set; }
     private string ImportedContent { get; set; } = string.Empty;
 
     /// <summary>
-    /// Initialize the component and load available data files.
+    /// Initializes the component and loads available data files.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        InitializeFileLists();
-        await base.OnInitializedAsync();
+        try
+        {
+            InitializeFileLists();
+            await base.OnInitializedAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Failed to initialize: {Message}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Import file.
+    /// </summary>
+    private void ImportFile()
+    {
+        if (!string.IsNullOrWhiteSpace(ImportedContent))
+        {
+            PaimonImporter.Import(ImportedContent);
+            InitializeFileLists(); // Refresh the file lists after importing
+            ClearFile(); // Clear the uploaded file state
+            StateHasChanged(); // Refresh the UI to reflect updates
+        }
     }
 
     /// <summary>
@@ -73,7 +96,7 @@
     }
 
     /// <summary>
-    /// Handles file change event, reading and storing the uploaded file content.
+    /// Handles file change event and processes the uploaded file.
     /// </summary>
     private async Task OnFileChange(InputFileChangeEventArgs e)
     {
@@ -82,44 +105,44 @@
         {
             try
             {
-                using var stream = UploadedFile.OpenReadStream(maxAllowedSize: MaxFileSize);
+                using var stream = UploadedFile.OpenReadStream(MaxFileSize);
                 using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-                ImportedContent = await reader.ReadToEndAsync();
-                PaimonMoeImporter.Import(ImportedContent);
+                ImportedContent = await reader.ReadToEndAsync();               
             }
             catch (Exception ex)
             {
-                // Handle file read error (e.g., log or display error to user)
-                Logger.LogError("Error reading file: {ex.Message}", ex.Message);
+                Logger.LogError("Error reading file: {Message}", ex.Message);
             }
         }
     }
 
     /// <summary>
-    /// Exports the data to a JSON file, combining selected files and imported content.
+    /// Exports the data to a JSON file.
     /// </summary>
     private async Task ExportData()
     {
-        if (SelectedAchievementFile is not null)
+        if (SelectedAchievementFile is null)
         {
-            try
+            Logger.LogWarning("No achievement file selected for export.");
+            return;
+        }
+
+        try
+        {
+            if (PaimonMoeExporter.Export(out var result, SelectedAchievementFile, ImportedContent, SelectedCharacterFile))
             {
-                if (PaimonMoeExporter.Export(out var result, SelectedAchievementFile, ImportedContent, SelectedCharacterFile))
-                {
-                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                    await JS.InvokeAsync<bool>("__akasha_saveAsJson", $"paimon-moe_{timestamp}.json", result);
-                }
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                await JS.InvokeAsync<bool>("__akasha_saveAsJson", $"paimon-moe_{timestamp}.json", result);
             }
-            catch (Exception ex)
-            {
-                // Handle export errors
-                Logger.LogError("Export failed: {ex.Message}", ex.Message);
-            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Export failed: {Message}", ex.Message);
         }
     }
 
     /// <summary>
-    /// Loads and initializes file lists for achievements and characters.
+    /// Initializes file lists for achievements and characters.
     /// </summary>
     private void InitializeFileLists()
     {
