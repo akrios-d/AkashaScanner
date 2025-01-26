@@ -26,20 +26,20 @@
         <!-- File Import Form -->
         <form class="import__file">
             <InputFile id="@FileInputId" class="file-input" accept=".json" OnChange="@OnFileChange" />
-            <button class="button button--outline reset-button" type="reset" @onclick="@ClearFile">Clear</button>
-            <button class="button button--outline reset-button" type="submit" @onclick="@ImportFile">Import</button>
+            <button class="button button--outline reset-button" type="button" @onclick="@ClearFile">Clear</button>
+            <button class="button button--outline import-button" type="button" @onclick="@ImportFile" disabled="@string.IsNullOrEmpty(ImportedContent)">Import</button>
         </form>
     </div>
 
     <!-- Achievement and Character File Lists -->
     <DataFileList Title="Export Achievements"
-    FileList="@AchievementFileList"
-    @bind-Value="@SelectedAchievementFile" />
+                  FileList="@AchievementFileList"
+                  @bind-Value="@SelectedAchievementFile" />
 
     <DataFileListOptional Title="Export Characters"
-    TitleNegative="Do not export characters"
-    FileList="@CharacterFileList"
-    @bind-Value="@SelectedCharacterFile" />
+                          TitleNegative="Do not export characters"
+                          FileList="@CharacterFileList"
+                          @bind-Value="@SelectedCharacterFile" />
 </ExportLayout>
 
 @code {
@@ -63,26 +63,35 @@
     {
         try
         {
-            InitializeFileLists();
+            RefreshFileLists();
             await base.OnInitializedAsync();
         }
         catch (Exception ex)
         {
-            Logger.LogError("Failed to initialize: {Message}", ex.Message);
+            Logger.LogError("Initialization failed: {Message}", ex.Message);
         }
     }
 
     /// <summary>
-    /// Import file.
+    /// Imports the file and refreshes the UI.
     /// </summary>
     private void ImportFile()
     {
-        if (!string.IsNullOrWhiteSpace(ImportedContent))
+        if (string.IsNullOrWhiteSpace(ImportedContent))
+        {
+            Logger.LogWarning("No content available for import.");
+            return;
+        }
+
+        try
         {
             PaimonImporter.Import(ImportedContent);
-            InitializeFileLists(); // Refresh the file lists after importing
-            ClearFile(); // Clear the uploaded file state
-            StateHasChanged(); // Refresh the UI to reflect updates
+            RefreshFileLists(); // Refresh lists to reflect changes
+            ClearFile(); // Clear imported content
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Import failed: {Message}", ex.Message);
         }
     }
 
@@ -93,6 +102,7 @@
     {
         UploadedFile = null;
         ImportedContent = string.Empty;
+        StateHasChanged(); // Ensure UI reflects the cleared state
     }
 
     /// <summary>
@@ -101,18 +111,34 @@
     private async Task OnFileChange(InputFileChangeEventArgs e)
     {
         UploadedFile = e.File;
-        if (UploadedFile is not null)
+
+        if (UploadedFile is null)
         {
-            try
+            Logger.LogWarning("No file selected.");
+            return;
+        }
+
+        try
+        {
+            if (UploadedFile.Size > MaxFileSize)
             {
-                using var stream = UploadedFile.OpenReadStream(MaxFileSize);
-                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-                ImportedContent = await reader.ReadToEndAsync();               
-            }
-            catch (Exception ex)
+                throw new Exception("File exceeds the maximum allowed size.");
+            }                
+
+            using var stream = UploadedFile.OpenReadStream(MaxFileSize);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            ImportedContent = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(ImportedContent))
             {
-                Logger.LogError("Error reading file: {Message}", ex.Message);
+                throw new Exception("Uploaded file is empty.");
             }
+                
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("File processing failed: {Message}", ex.Message);
+            ClearFile(); // Reset file state on error
         }
     }
 
@@ -142,9 +168,9 @@
     }
 
     /// <summary>
-    /// Initializes file lists for achievements and characters.
+    /// Refreshes file lists for achievements and characters.
     /// </summary>
-    private void InitializeFileLists()
+    private void RefreshFileLists()
     {
         AchievementFileList = AchievementDataFiles.List();
         SelectedAchievementFile = AchievementFileList.FirstOrDefault();
