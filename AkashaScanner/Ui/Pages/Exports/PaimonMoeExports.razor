@@ -2,81 +2,180 @@
 @page "/exports/paimonmoe"
 
 @using Core.Exporters
+@using Core.Importers
 @using Core.DataFiles
 @using Core.DataCollections
 @inject IDataFileRepository<AchievementOutput> AchievementDataFiles
 @inject IAchievementCollection AchievementCollections
 @inject IDataFileRepository<CharacterOutput> CharacterDataFiles
 @inject ICharacterCollection CharacterCollections
+@inject IPaimonMoeImporter PaimonImporter
 @inject IJSRuntime JS
+@inject ILogger<IPaimonMoeImporter> Logger
 
-<ExportLayout Enabled="@(AchievementSelectedFile != null)" OnSubmit="@HandleSubmit">
+<ExportLayout Enabled="@(SelectedAchievementFile is not null || !string.IsNullOrEmpty(ImportedContent))" OnSubmit="@ExportData">
     <div>
+        <!-- Notice for users -->
         <div class="import__notice">
-            If you use Paimon.moe not only for achievement tracking (e.g. wish counter),
-            consider exporting data from <a class="link" href="https://paimon.moe/settings" target="_blank">Paimon.moe</a> first and
-            importing it below so it will not override your existing data.
+            If you use Paimon.moe not only for achievement tracking (e.g., wish counter),
+            consider exporting data from
+            <a class="link" href="https://paimon.moe/settings" target="_blank">Paimon.moe</a> first
+            and importing it below to avoid overwriting your existing data.
         </div>
+
+        <!-- File Import Form -->
         <form class="import__file">
-            <InputFile id="@fileInputId" class="file-input" accept=".json" OnChange="@LoadFile" />
-            <button class="button button--outline reset-button" type="reset" @onclick="@ResetFile">Clear</button>
+            <InputFile id="@FileInputId" class="file-input" accept=".json" OnChange="@OnFileChange" />
+            <button class="button button--outline reset-button" type="button" @onclick="@ClearFile">Clear</button>
+            <button class="button button--outline import-button" type="button" @onclick="@ImportFile" disabled="@string.IsNullOrEmpty(ImportedContent)">Import</button>
         </form>
     </div>
-    <DataFileList Title="Export achievements"
-                  FileList="@AchievementFileList" @bind-Value="@AchievementSelectedFile" />
-    <DataFileListOptional Title="Export characters"
+
+    <!-- Achievement and Character File Lists -->
+    <DataFileList Title="Export Achievements"
+                  FileList="@AchievementFileList"
+                  @bind-Value="@SelectedAchievementFile" />
+
+    <DataFileListOptional Title="Export Characters"
                           TitleNegative="Do not export characters"
-                          FileList="@CharacterFileList" @bind-Value="@CharacterSelectedFile" />
+                          FileList="@CharacterFileList"
+                          @bind-Value="@SelectedCharacterFile" />
 </ExportLayout>
 
 @code {
-    private const string fileInputId = "paimon-moe-exports-file-input";
-    private IDataFile<AchievementOutput>? AchievementSelectedFile { get; set; }
+    private const string FileInputId = "paimon-moe-exports-file-input";
+    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+
+    // Selected files and file lists
+    private IDataFile<AchievementOutput>? SelectedAchievementFile { get; set; }
     private List<IDataFile<AchievementOutput>> AchievementFileList { get; set; } = new();
-    private IDataFile<CharacterOutput>? CharacterSelectedFile { get; set; }
+    private IDataFile<CharacterOutput>? SelectedCharacterFile { get; set; }
     private List<IDataFile<CharacterOutput>> CharacterFileList { get; set; } = new();
-    private IBrowserFile? import;
 
-    protected override Task OnInitializedAsync()
+    // File import state
+    private IBrowserFile? UploadedFile { get; set; }
+    private string ImportedContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Initializes the component and loads available data files.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
     {
-        Initialize();
-        AchievementFileList = AchievementDataFiles.List();
-        AchievementSelectedFile = AchievementFileList.FirstOrDefault();
-        CharacterFileList = CharacterDataFiles.List();
-        return Task.CompletedTask;
-    }
-
-    private void ResetFile()
-    {
-        import = null;
-    }
-
-
-    private void LoadFile(InputFileChangeEventArgs e)
-    {
-        import = e.File;
-    }
-
-    private async Task HandleSubmit()
-    {
-        if (AchievementSelectedFile != null)
+        try
         {
-            string importContent = string.Empty;
-            if (import != null)
+            RefreshFileLists();
+            await base.OnInitializedAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Initialization failed: {Message}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Imports the file and refreshes the UI.
+    /// </summary>
+    private void ImportFile()
+    {
+        if (string.IsNullOrWhiteSpace(ImportedContent))
+        {
+            Logger.LogWarning("No content available for import.");
+            return;
+        }
+
+        try
+        {
+            PaimonImporter.Import(ImportedContent);
+            RefreshFileLists(); // Refresh lists to reflect changes
+            ClearFile(); // Clear imported content
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Import failed: {Message}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Clears the uploaded file state.
+    /// </summary>
+    private void ClearFile()
+    {
+        UploadedFile = null;
+        ImportedContent = string.Empty;
+        StateHasChanged(); // Ensure UI reflects the cleared state
+    }
+
+    /// <summary>
+    /// Handles file change event and processes the uploaded file.
+    /// </summary>
+    private async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        UploadedFile = e.File;
+
+        if (UploadedFile is null)
+        {
+            Logger.LogWarning("No file selected.");
+            return;
+        }
+
+        try
+        {
+            if (UploadedFile.Size > MaxFileSize)
             {
-                var value = await JS.InvokeAsync<string>("__akasha_getInputValue", fileInputId);
-                if (!string.IsNullOrEmpty(value))
-                {
-                    using var stream = import.OpenReadStream();
-                    using var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8);
-                    importContent = await reader.ReadToEndAsync();
-                }
+                throw new Exception("File exceeds the maximum allowed size.");
+            }                
+
+            using var stream = UploadedFile.OpenReadStream(MaxFileSize);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            ImportedContent = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(ImportedContent))
+            {
+                throw new Exception("Uploaded file is empty.");
             }
-            if (PaimonMoeExporter.Export(out var str, AchievementSelectedFile, importContent, CharacterSelectedFile))
+                
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("File processing failed: {Message}", ex.Message);
+            ClearFile(); // Reset file state on error
+        }
+    }
+
+    /// <summary>
+    /// Exports the data to a JSON file.
+    /// </summary>
+    private async Task ExportData()
+    {
+        if (SelectedAchievementFile is null)
+        {
+            Logger.LogWarning("No achievement file selected for export.");
+            return;
+        }
+
+        try
+        {
+            if (PaimonMoeExporter.Export(out var result, SelectedAchievementFile, ImportedContent, SelectedCharacterFile))
             {
-                var now = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                await JS.InvokeAsync<bool>("__akasha_saveAsJson", $"paimon-moe_{now}.json", str);
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                await JS.InvokeAsync<bool>("__akasha_saveAsJson", $"paimon-moe_{timestamp}.json", result);
             }
         }
+        catch (Exception ex)
+        {
+            Logger.LogError("Export failed: {Message}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Refreshes file lists for achievements and characters.
+    /// </summary>
+    private void RefreshFileLists()
+    {
+        AchievementFileList = AchievementDataFiles.List();
+        SelectedAchievementFile = AchievementFileList.FirstOrDefault();
+
+        CharacterFileList = CharacterDataFiles.List();
+        SelectedCharacterFile = CharacterFileList.FirstOrDefault();
     }
 }

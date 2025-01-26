@@ -5,6 +5,7 @@ using AkashaScanner.Core.Characters;
 using AkashaScanner.Core.DataCollections;
 using AkashaScanner.Core.DataCollections.Repositories;
 using AkashaScanner.Core.DataFiles;
+using AkashaScanner.Core.Importers;
 using AkashaScanner.Core.Navigation.Achievement;
 using AkashaScanner.Core.Navigation.Character;
 using AkashaScanner.Core.Navigation.Inventory;
@@ -53,6 +54,7 @@ namespace AkashaScanner.Core
 
                 .AddSingleton<IRepository<List<AchievementCategoryEntry>>, AchievementRepository>()
                 .AddSingleton<IAchievementCollection, AchievementCollection>()
+                .AddSingleton<IPaimonMoeImporter, PaimonMoeImporter>()
 
                 .AddSingleton<IConfig, Config>()
                 .AddSingleton<IGlobalConfig>(p => p.GetService<IConfig>()!)

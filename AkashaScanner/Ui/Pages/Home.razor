@@ -7,35 +7,78 @@
         Welcome to the Akasha Scanner! (version @(Utils.AppVersion.ToString(3)))
     </p>
     <p>
-        <a class="link" href="https://github.com/akrios-d/AkashaScanner/blob/master/README.md" target="_blank">Home page</a>
+        <a class="link" href="https://github.com/akrios-d/AkashaScanner/blob/master/README.md" target="_blank">
+            Home Page
+        </a>
     </p>
-    @if (UpdateUrl != null)
+    @if (!string.IsNullOrEmpty(UpdateUrl))
     {
         <p>
-            A new update is available. <span class="link" @onclick="StartUpdate">Download now</span>.
+            A new update is available. <span class="link" @onclick="DownloadUpdate">Download now</span>.
+        </p>
+    }
+    else
+    {
+        <p>
+            Your application is up to date!
         </p>
     }
 </div>
 
-<Modal Visible="@Updating">
+<!-- Modal for update progress -->
+<Modal Visible="@IsUpdating">
     <div class="modal__content">
-        <div>Downloading Latest Update</div>
+        <h3>Downloading Latest Update</h3>
         <Loading />
+        <p>Please wait while the update is being downloaded...</p>
     </div>
 </Modal>
 
 @code {
-    private string? UpdateUrl { get; set; } = null;
-    private bool Updating { get; set; }
+    private string? UpdateUrl { get; set; }
+    private bool IsUpdating { get; set; } = false;
+    private string? ErrorMessage { get; set; }
 
+    /// <summary>
+    /// On initialization, check for available updates.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        UpdateUrl = await AppUpdate.Check();
+        try
+        {
+            UpdateUrl = await AppUpdate.Check();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to check for updates: {ex.Message}");
+            ErrorMessage = "Failed to check for updates. Please try again later.";
+        }
     }
 
-    private async Task StartUpdate()
+    /// <summary>
+    /// Starts downloading the update if a URL is available.
+    /// </summary>
+    private async Task DownloadUpdate()
     {
-        Updating = true;
-        await AppUpdate.StartUpdate(UpdateUrl!);
+        if (string.IsNullOrEmpty(UpdateUrl))
+        {
+            ErrorMessage = "No update URL available.";
+            return;
+        }
+
+        IsUpdating = true;
+        try
+        {
+            await AppUpdate.StartUpdate(UpdateUrl);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to download update: {ex.Message}");
+            ErrorMessage = "Failed to download the update. Please try again later.";
+        }
+        finally
+        {
+            IsUpdating = false;
+        }
     }
 }
