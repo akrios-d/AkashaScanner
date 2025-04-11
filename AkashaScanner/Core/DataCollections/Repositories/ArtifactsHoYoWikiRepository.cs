@@ -39,7 +39,7 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                 var artifacts = result.modules.Find((m) => m.name == "Set")!.components.Find((c) => c.component_id == "artifact_list")!;
                 var data = JsonConvert.DeserializeObject<Data>(artifacts.data)!;
 
-                var loadSingle = async (DataContent data, ArtifactSlot slot) =>
+                async Task loadSingle(DataContent data, ArtifactSlot slot)
                 {
                     var name = data.title;
                     if (string.IsNullOrEmpty(name))
@@ -58,11 +58,14 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                         SetName = setName,
                     };
                     entry = FixWikiErrors(entry);
-                    if(entry.Slot != ArtifactSlot.Invalid)
+                    if (entry.Slot == ArtifactSlot.Invalid)
                     {
-                        output.Add(entry);
-                    }                    
-                };
+                        Logger.LogError("Fail to load '{setName}'", setName);
+                        return;
+                    }
+                    output.Add(entry);
+
+                }
 
                 await loadSingle(data.flower_of_life, ArtifactSlot.Flower);
                 await loadSingle(data.plume_of_death, ArtifactSlot.Plume);
@@ -89,10 +92,12 @@ namespace AkashaScanner.Core.DataCollections.Repositories
                 return entry with { Slot = ArtifactSlot.Goblet };
             else if (string.Equals(entry.Name, "Skeletal Hat", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Circlet };
+            else if (string.Equals(entry.Name, "A rhyton fired with copper as the base, that was once filled with fine wine from paradise.", StringComparison.OrdinalIgnoreCase))
+                return entry with { Slot = ArtifactSlot.Circlet, Name = "Whimsical Dance of the Withered" };
             else if (string.Equals(entry.Name, "Poem Passed Down from Days Past", StringComparison.OrdinalIgnoreCase))
                 return entry with { Slot = ArtifactSlot.Circlet, Name = "Poetry Of Days Past" };
             else if (string.Equals(entry.Name, "Myths of the Night Realm", StringComparison.OrdinalIgnoreCase) && entry.Slot == ArtifactSlot.Flower)
-                return entry with { Slot = ArtifactSlot.Flower, Name = "Reckoning of the Xenogenic" };            
+                return entry with { Slot = ArtifactSlot.Flower, Name = "Reckoning of the Xenogenic" };       
 
             return entry;
         }
