@@ -69,6 +69,7 @@ namespace AkashaScanner.Core.Artifacts
         protected Rectangle MainStatRect;
         protected Rectangle RarityRect;
         protected Rectangle LevelRect;
+        protected Rectangle LevelRectSanctifying;
         protected Rectangle SubStatsRect;
         private int RarityStarAreaMin;
         private int RarityStarAreaMax;
@@ -105,6 +106,7 @@ namespace AkashaScanner.Core.Artifacts
             MainStatRect = Win.ScaleRectangle(17, 100, 170, 20);
             RarityRect = Win.ScaleRectangle(16, 156, 114, 24);
             LevelRect = Win.ScaleRectangle(21, 207, 34, 17);
+            LevelRectSanctifying = Win.ScaleRectangle(21, 234, 34, 17);
             SubStatsRect = Win.ScaleRectangle(30, 235, 296, 105);
             RarityStarAreaMin = Win.Scale(Win.Scale(100));
             RarityStarAreaMax = Win.Scale(Win.Scale(155));
@@ -148,14 +150,15 @@ namespace AkashaScanner.Core.Artifacts
         protected virtual void LoadMainStat(Bitmap image, Artifact artifact)
         {
             var text = Ocr.FindText(image, region: MainStatRect, inverted: true);
-            (int score, string? value) = text.FuzzySearch(MainStatsList);
-            if (score >= IsValidMainStatScore)
+            var (score, matchedStat) = text.FuzzySearch(MainStatsList);
+
+            if (score >= IsValidMainStatScore && matchedStat is not null)
             {
-                artifact.MainStat = MainStatsMapping[value!];
+                artifact.MainStat = MainStatsMapping[matchedStat];
             }
             else
             {
-                Logger.LogWarning("Fail to identify the main stat of artifact: {text}", text);
+                Logger.LogWarning("Failed to identify main stat from OCR: {Text}", text);
             }
         }
 
@@ -188,50 +191,56 @@ namespace AkashaScanner.Core.Artifacts
         protected virtual void LoadLevel(Bitmap image, Artifact artifact)
         {
             var text = Ocr.FindText(image, region: LevelRect, inverted: true);
-            text = Regex.Replace(text, @"[\D]", string.Empty);
-            if (int.TryParse(text, out int level))
+
+            // If no digits are found in the OCR result, try the alternative region
+            if (!Regex.IsMatch(text, @"\d"))
+            {
+                text = Ocr.FindText(image, region: LevelRectSanctifying, inverted: true);
+            }
+
+            // Remove non-digit characters
+            string digitsOnly = Regex.Replace(text, @"\D", string.Empty);
+
+            if (int.TryParse(digitsOnly, out int level))
             {
                 artifact.Level = level;
             }
             else
             {
-                Logger.LogWarning("Fail to identify the level of artifact: {text}", text);
+                //image.Save("text.png");
+                Logger.LogWarning("Failed to identify the level of artifact. Extracted text: {text}", text);
             }
         }
 
         protected virtual void LoadSubStats(Bitmap image, Artifact artifact)
         {
-            var lines = Ocr.FindLines(image, region: SubStatsRect);
-            foreach (var line in lines)
+            foreach (var line in Ocr.FindLines(image, region: SubStatsRect))
             {
                 if (line.Length < 5) continue;
-                var noDigitText = Regex.Replace(line, @"\d", string.Empty).Trim()!;
 
-                (int score, string? statName) = noDigitText.FuzzySearch(SubStatsList)!;
-                var type = SubStatsMapping[statName!];
-                Logger.LogDebug("Identify {line} as {type} with confidence {score}/100", line, type, score);
+                string noDigitText = Regex.Replace(line, @"\d", string.Empty).Trim();
+                var (score, matchedStat) = noDigitText.FuzzySearch(SubStatsList);
 
-                if (score >= IsValidSubStatScore)
+                if (score < IsValidSubStatScore || matchedStat is null) continue;
+
+                var type = SubStatsMapping[matchedStat];
+                Logger.LogDebug("Parsed '{line}' as {type} with score {score}", line, type, score);
+
+                string numericPart = type.IsFlat()
+                    ? Regex.Replace(line, @"\D", string.Empty)
+                    : Regex.Replace(line, @"[^\d.]", string.Empty);
+
+                if (decimal.TryParse(numericPart, NumberStyles.Number, cultureInfo, out decimal value))
                 {
-                    if (type.IsFlat())
+                    artifact.Substats.Add(new Artifact.SubStat
                     {
-                        var text = Regex.Replace(line, @"\D", string.Empty);
-                        if (int.TryParse(text, out int value))
-                        {
-                            artifact.Substats.Add(new Artifact.SubStat() { Type = type, Value = value });
-                        }
-                    }
-                    else
-                    {
-                        var text = Regex.Replace(line, @"[^\d.]", string.Empty);
-                        if (decimal.TryParse(text, NumberStyles.Number, cultureInfo, out decimal value))
-                        {
-                            artifact.Substats.Add(new Artifact.SubStat() { Type = type, Value = value });
-                        }
-                    }
+                        Type = type,
+                        Value = type.IsFlat() ? (int)value : value
+                    });
                 }
             }
         }
+
         private void LoadEquipped(Bitmap image, Artifact artifact, Dictionary<string, string> CharacterNameOverrides)
         {
             var character = GetEquipped(Ocr, image, CharacterNameOverrides);
