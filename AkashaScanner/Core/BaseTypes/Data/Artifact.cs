@@ -12,6 +12,7 @@ namespace AkashaScanner.Core.BaseTypes.Data
         public List<SubStat> Substats = new();
         public string EquippedCharacter = "";
         public bool Locked;
+        public bool Sanctifying;
 
         public static bool IsValid() => true;
 
@@ -45,6 +46,8 @@ namespace AkashaScanner.Core.BaseTypes.Data
             }
             builder.Append("], EquippedCharacter = ");
             builder.Append(EquippedCharacter);
+            builder.Append(", Sanctifying = ");
+            builder.Append(Sanctifying);
             return true;
         }
 

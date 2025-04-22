@@ -13,7 +13,7 @@
         <Configurations>Debug;Release;Headless</Configurations>
         <Platforms>x64</Platforms>
         <Title>Akasha Scanner</Title>
-        <Version>0.6.2</Version>
+        <Version>0.6.3</Version>
         <Copyright>MIT</Copyright>
         <RepositoryUrl>https://github.com/akrios-d/AkashaScanner</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>

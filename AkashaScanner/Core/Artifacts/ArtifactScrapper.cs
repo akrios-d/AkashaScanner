@@ -71,6 +71,7 @@ namespace AkashaScanner.Core.Artifacts
         protected Rectangle LevelRect;
         protected Rectangle LevelRectSanctifying;
         protected Rectangle SubStatsRect;
+        protected Rectangle SubStatsRectSanctifying;
         private int RarityStarAreaMin;
         private int RarityStarAreaMax;
 
@@ -108,6 +109,7 @@ namespace AkashaScanner.Core.Artifacts
             LevelRect = Win.ScaleRectangle(21, 207, 34, 17);
             LevelRectSanctifying = Win.ScaleRectangle(21, 234, 34, 17);
             SubStatsRect = Win.ScaleRectangle(30, 235, 296, 105);
+            SubStatsRectSanctifying = Win.ScaleRectangle(30, 262, 296, 105);
             RarityStarAreaMin = Win.Scale(Win.Scale(100));
             RarityStarAreaMax = Win.Scale(Win.Scale(155));
         }
@@ -196,6 +198,7 @@ namespace AkashaScanner.Core.Artifacts
             if (!Regex.IsMatch(text, @"\d"))
             {
                 text = Ocr.FindText(image, region: LevelRectSanctifying, inverted: true);
+                artifact.Sanctifying = true;
             }
 
             // Remove non-digit characters
@@ -214,7 +217,8 @@ namespace AkashaScanner.Core.Artifacts
 
         protected virtual void LoadSubStats(Bitmap image, Artifact artifact)
         {
-            foreach (var line in Ocr.FindLines(image, region: SubStatsRect))
+            Rectangle region = artifact.Sanctifying ? SubStatsRectSanctifying : SubStatsRect;
+            foreach (var line in Ocr.FindLines(image, region: region))
             {
                 if (line.Length < 5) continue;
 
