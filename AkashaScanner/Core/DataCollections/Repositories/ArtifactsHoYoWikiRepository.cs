@@ -5,101 +5,114 @@ namespace AkashaScanner.Core.DataCollections.Repositories
 {
     public class ArtifactsHoYoWikiRepository : HoYoWikiRepository<ArtifactEntry>
     {
+        private readonly ILogger<ArtifactsHoYoWikiRepository> _logger;
+        private const string ArtifactCategoryId = "5";
+        private const string ArtifactModuleName = "Set";
+        private const string ArtifactComponentId = "artifact_list";
+
         public ArtifactsHoYoWikiRepository(ILogger<ArtifactsHoYoWikiRepository> logger)
         {
-            Logger = logger;
+            _logger = logger;
         }
 
         public override async Task<List<ArtifactEntry>?> Load()
         {
             using var client = CreateClient();
-            Logger.LogInformation("Loading artifacts");
+            _logger.LogInformation("Loading artifacts...");
 
-            var resp = await LoadEntryPageList<Item>(client, "5");
-            if (resp == null)
+            var items = await LoadEntryPageList<Item>(client, ArtifactCategoryId);
+            if (items is null)
             {
-                Logger.LogError("Fail to load artifacts");
+                _logger.LogError("Failed to load artifact list.");
                 return null;
             }
 
             var output = new List<ArtifactEntry>();
 
-            foreach (var item in resp)
+            foreach (var item in items)
             {
                 var setName = item.name.Trim();
-                Logger.LogInformation("Loading '{setName}'", setName);
+                _logger.LogInformation("Processing artifact set: '{SetName}'", setName);
 
-                var result = await LoadEntryPage<Detail>(client, item.entry_page_id);
-                if (result == null)
+                var detail = await LoadEntryPage<Detail>(client, item.entry_page_id);
+                if (detail is null)
                 {
-                    Logger.LogError("Fail to load '{setName}'", setName);
-                    return null;
+                    _logger.LogError("Failed to load details for set: '{SetName}'", setName);
+                    continue;
                 }
 
-                var artifacts = result.modules.Find((m) => m.name == "Set")!.components.Find((c) => c.component_id == "artifact_list")!;
-                var data = JsonConvert.DeserializeObject<Data>(artifacts.data)!;
+                var module = detail.modules.FirstOrDefault(m => m.name == ArtifactModuleName);
+                var component = module?.components.FirstOrDefault(c => c.component_id == ArtifactComponentId);
 
-                async Task loadSingle(DataContent data, ArtifactSlot slot)
+                if (component is null)
                 {
-                    var name = data.title;
-                    if (string.IsNullOrEmpty(name))
-                    {
-                        return;
-                    }
-                    name = name.Trim();
-                    var icon = data.icon_url;
-                    var iconPath = IconRepository.GetPath("Artifacts", name, Path.GetExtension(icon));
-                    await IconRepository.SaveUrlAsIcon(client, icon, iconPath);
-                    var entry = new ArtifactEntry()
-                    {
-                        Name = name,
-                        Icon = iconPath,
-                        Slot = slot,
-                        SetName = setName,
-                    };
-                    entry = FixWikiErrors(entry);
-                    if (entry.Slot == ArtifactSlot.Invalid)
-                    {
-                        Logger.LogError("Fail to load '{setName}'", setName);
-                        return;
-                    }
-                    output.Add(entry);
-
+                    _logger.LogError("Artifact list component missing for set: '{SetName}'", setName);
+                    continue;
                 }
 
-                await loadSingle(data.flower_of_life, ArtifactSlot.Flower);
-                await loadSingle(data.plume_of_death, ArtifactSlot.Plume);
-                await loadSingle(data.sands_of_eon, ArtifactSlot.Sands);
-                await loadSingle(data.goblet_of_eonothem, ArtifactSlot.Goblet);
-                await loadSingle(data.circlet_of_logos, ArtifactSlot.Circlet);
+                var data = JsonConvert.DeserializeObject<Data>(component.data);
+                if (data is null)
+                {
+                    _logger.LogError("Failed to parse artifact data for set: '{SetName}'", setName);
+                    continue;
+                }
+
+                await LoadSingleArtifact(client, data.flower_of_life, ArtifactSlot.Flower, setName, output);
+                await LoadSingleArtifact(client, data.plume_of_death, ArtifactSlot.Plume, setName, output);
+                await LoadSingleArtifact(client, data.sands_of_eon, ArtifactSlot.Sands, setName, output);
+                await LoadSingleArtifact(client, data.goblet_of_eonothem, ArtifactSlot.Goblet, setName, output);
+                await LoadSingleArtifact(client, data.circlet_of_logos, ArtifactSlot.Circlet, setName, output);
             }
 
-            Logger.LogInformation("Artifacts loaded");
-
+            _logger.LogInformation("Artifact loading complete. Total artifacts: {Count}", output.Count);
             return output;
         }
 
-        // Data is wrong in the wiki, so we fix it here
+        private async Task LoadSingleArtifact(HttpClient client, DataContent data, ArtifactSlot slot, string setName, List<ArtifactEntry> output)
+        {
+            var name = data.title?.Trim();
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            var iconPath = IconRepository.GetPath("Artifacts", name, Path.GetExtension(data.icon_url));
+            await IconRepository.SaveUrlAsIcon(client, data.icon_url, iconPath);
+
+            var entry = new ArtifactEntry
+            {
+                Name = name,
+                Icon = iconPath,
+                Slot = slot,
+                SetName = setName
+            };
+
+            entry = FixWikiErrors(entry);
+
+            if (entry.Slot == ArtifactSlot.Invalid)
+            {
+                _logger.LogWarning("Invalid artifact slot detected for: '{Name}' in set '{SetName}'", entry.Name, setName);
+                return;
+            }
+
+            output.Add(entry);
+        }
+
         private static ArtifactEntry FixWikiErrors(ArtifactEntry entry)
         {
-            if (string.Equals(entry.Name, "Bloom Times", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Flower };
-            else if (string.Equals(entry.Name, "Plume of Luxury", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Plume };
-            else if (string.Equals(entry.Name, "Song of Life", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Sands };
-            else if (string.Equals(entry.Name, "Calabash of Awakening", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Goblet };
-            else if (string.Equals(entry.Name, "Skeletal Hat", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Circlet };
-            else if (string.Equals(entry.Name, "A rhyton fired with copper as the base, that was once filled with fine wine from paradise.", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Circlet, Name = "Whimsical Dance of the Withered" };
-            else if (string.Equals(entry.Name, "Poem Passed Down from Days Past", StringComparison.OrdinalIgnoreCase))
-                return entry with { Slot = ArtifactSlot.Circlet, Name = "Poetry Of Days Past" };
-            else if (string.Equals(entry.Name, "Myths of the Night Realm", StringComparison.OrdinalIgnoreCase) && entry.Slot == ArtifactSlot.Flower)
-                return entry with { Slot = ArtifactSlot.Flower, Name = "Reckoning of the Xenogenic" };       
-
-            return entry;
+            return entry.Name.ToLowerInvariant() switch
+            {
+                "bloom times" => entry with { Slot = ArtifactSlot.Flower },
+                "plume of luxury" => entry with { Slot = ArtifactSlot.Plume },
+                "song of life" => entry with { Slot = ArtifactSlot.Sands },
+                "calabash of awakening" => entry with { Slot = ArtifactSlot.Goblet },
+                "skeletal hat" => entry with { Slot = ArtifactSlot.Circlet },
+                "a rhyton fired with copper as the base, that was once filled with fine wine from paradise." =>
+                    entry with { Slot = ArtifactSlot.Circlet, Name = "Whimsical Dance of the Withered" },
+                "poem passed down from days past" =>
+                    entry with { Slot = ArtifactSlot.Circlet, Name = "Poetry Of Days Past" },
+                "myths of the night realm" when entry.Slot == ArtifactSlot.Flower =>
+                    entry with { Slot = ArtifactSlot.Flower, Name = "Reckoning of the Xenogenic" },
+                _ => entry
+            };
         }
 
         private record Item

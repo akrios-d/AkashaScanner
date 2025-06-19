@@ -4,59 +4,82 @@ namespace AkashaScanner.Core.DataCollections.Repositories
 {
     public class WeaponsHoYoWikiRepository : HoYoWikiRepository<WeaponEntry>
     {
+        private readonly ILogger<WeaponsHoYoWikiRepository> _logger;
+        private const string WeaponCategoryId = "4";
+
         public WeaponsHoYoWikiRepository(ILogger<WeaponsHoYoWikiRepository> logger)
         {
-            Logger = logger;
+            _logger = logger;
         }
 
         public override async Task<List<WeaponEntry>?> Load()
         {
             using var client = CreateClient();
-            Logger.LogInformation("Loading weapons");
+            _logger.LogInformation("Starting to load weapon entries from HoYoWiki.");
 
-            var resp = await LoadEntryPageList<Item>(client, "4");
-            if (resp == null)
+            var items = await LoadEntryPageList<Item>(client, WeaponCategoryId);
+
+            if (items is null)
             {
-                Logger.LogError("Fail to load weapons");
+                _logger.LogError("Failed to retrieve weapon entries from HoYoWiki.");
                 return null;
             }
 
-            var output = new List<WeaponEntry>();
+            var weapons = new List<WeaponEntry>();
 
-            foreach (var item in resp)
+            foreach (var item in items)
             {
-                if (string.IsNullOrEmpty(item.icon_url) || item.filter_values.weapon_rarity is null || item.filter_values.weapon_type is null)
+                if (string.IsNullOrWhiteSpace(item.icon_url) ||
+                    item.filter_values.weapon_rarity is null ||
+                    item.filter_values.weapon_type is null)
                 {
-                    Logger.LogInformation("Failed for weapon: " + item.name);
+                    _logger.LogWarning("Skipping weapon due to missing data: {WeaponName}", item.name);
                     continue;
                 }
-                var iconPath = IconRepository.GetPath("Weapons", item.name, Path.GetExtension(item.icon_url));
+
+                var extension = Path.GetExtension(item.icon_url);
+                var iconPath = IconRepository.GetPath("Weapons", item.name, extension);
                 await IconRepository.SaveUrlAsIcon(client, item.icon_url, iconPath);
 
-                var entry = new WeaponEntry()
+                if (!TryParseWeaponType(item.filter_values.weapon_type.values[0], out var weaponType))
+                {
+                    _logger.LogWarning("Unknown weapon type for: {WeaponName}", item.name);
+                    continue;
+                }
+
+                if (!int.TryParse(item.filter_values.weapon_rarity.values[0].Substring(0, 1), out var rarity))
+                {
+                    _logger.LogWarning("Invalid rarity format for: {WeaponName}", item.name);
+                    continue;
+                }
+
+                weapons.Add(new WeaponEntry
                 {
                     Name = item.name.Trim(),
                     Icon = iconPath,
-                    Rarity = int.Parse(item.filter_values.weapon_rarity.values[0][..1]),
-                    Type = item.filter_values.weapon_type.values[0] switch
-                    {
-                        "Bow" => WeaponType.Bow,
-                        "Catalyst" => WeaponType.Catalyst,
-                        "Polearm" => WeaponType.Polearm,
-                        "Sword" => WeaponType.Sword,
-                        "Claymore" => WeaponType.Claymore,
-                        _ => WeaponType.Invalid,
-                    }
-                };
-                if (entry.Type != WeaponType.Invalid)
-                {
-                    output.Add(entry);
-                }                    
+                    Rarity = rarity,
+                    Type = weaponType
+                });
             }
-            Logger.LogInformation("Weapons loaded");
 
-            return output;
+            _logger.LogInformation("Successfully loaded {Count} weapons.", weapons.Count);
+            return weapons;
         }
+
+        private static bool TryParseWeaponType(string value, out WeaponType type)
+        {
+            type = value switch
+            {
+                "Bow" => WeaponType.Bow,
+                "Catalyst" => WeaponType.Catalyst,
+                "Polearm" => WeaponType.Polearm,
+                "Sword" => WeaponType.Sword,
+                "Claymore" => WeaponType.Claymore,
+                _ => WeaponType.Invalid
+            };
+            return type != WeaponType.Invalid;
+        }
+
         private record Item
         {
             public string name = default!;
