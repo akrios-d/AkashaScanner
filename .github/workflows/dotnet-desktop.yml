@@ -1,0 +1,54 @@
+name: Build & Release .NET 6 Windows x64
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET 6 SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build in Release mode
+        run: dotnet build --configuration Release --no-restore
+        
+      - name: Publish Windows x64 (self-contained)
+        run: |
+          cd AkashaScanner
+          dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:Platform=x64 --output ../published
+
+      - name: Archive published output
+        run: Compress-Archive -Path published\* -DestinationPath AkashaScanner-win-x64.zip
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: "Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AkashaScanner-win-x64.zip
+          asset_name: AkashaScanner-${{ github.ref_name }}-win-x64.zip
+          asset_content_type: application/zip
