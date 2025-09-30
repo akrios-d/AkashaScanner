@@ -2,6 +2,8 @@ name: Build & Release .NET 6 Windows x64
 
 on:
   push:
+    branches:
+      - akrios-d-patch-1
     tags:
       - 'v*.*.*'   # Trigger on tags like v1.0.0
 
