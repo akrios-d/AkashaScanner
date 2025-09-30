@@ -6,10 +6,11 @@ on:
       - akrios-d-patch-1
     tags:
       - 'v*.*.*'   # Trigger on tags like v1.0.0
+  workflow_dispatch:  # allows manual testing
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # ✅ must be Windows for WinForms apps
 
     steps:
       - name: Checkout code
@@ -27,17 +28,16 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish Windows x64 (self-contained)
-        run: dotnet publish --configuration Release --runtime win-x64 --self-contained true --output published
+        run: dotnet publish AkashaScanner.csproj --configuration Release --runtime win-x64 --self-contained true -p:Platform=x64 --output published
 
       - name: Rename executable to AkashaScanner.exe
         run: |
-          EXE=$(find published -type f -name "*.exe" | head -n 1)
-          if [ -n "$EXE" ]; then
-            mv "$EXE" "$(dirname "$EXE")/AkashaScanner.exe"
-          fi
+          Get-ChildItem -Path published -Filter *.exe -Recurse | ForEach-Object {
+            Rename-Item $_.FullName "AkashaScanner.exe"
+          }
 
       - name: Archive published output
-        run: zip -r AkashaScanner-win-x64.zip published/
+        run: Compress-Archive -Path published\* -DestinationPath AkashaScanner-win-x64.zip
 
       - name: Create GitHub Release
         id: create_release
