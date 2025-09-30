@@ -31,12 +31,6 @@ jobs:
         run: |
           cd AkashaScanner
           dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:Platform=x64 --output ../published
-          
-      - name: Rename executable to AkashaScanner.exe
-        run: |
-          Get-ChildItem -Path published -Filter *.exe -Recurse | ForEach-Object {
-            Rename-Item $_.FullName "AkashaScanner.exe"
-          }
 
       - name: Archive published output
         run: Compress-Archive -Path published\* -DestinationPath AkashaScanner-win-x64.zip
